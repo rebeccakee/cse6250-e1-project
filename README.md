@@ -19,7 +19,11 @@ First, build the required environment
 pip install -r requirement.txt
 ```
 
-Put the following MIMIC-III files in the PAVE/data folder
+Create a folder for MIMIC-III data
+``` mkdir PAVE/data/mimic-iii-data
+```
+
+Put the following MIMIC-III files in `PAVE/data/mimic-iii-data` 
 * ADMISSIONS.csv
 * CHARTEVENTS.csv
 * D_ITEMS.csv
@@ -34,14 +38,14 @@ Run `script.py` to transform the raw MIMIC-III data. This will output the follow
 
 Create folders for additional data preprocessing output
 ```
-mkdir result
-mkdir data
-mkdir data/models
+mkdir PAVE/result
+mkdir PAVE/data
+mkdir PAVE/data/models
 ```
 
 Generate json files for PAVE model
 ```
-cd preprocessing/
+cd PAVE/preprocessing/
 python gen_master_feature.py 
 python gen_feature_time.py 
 python gen_vital_feature.py 
