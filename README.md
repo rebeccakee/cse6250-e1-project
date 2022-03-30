@@ -20,7 +20,8 @@ pip install -r requirement.txt
 ```
 
 Create a folder for MIMIC-III data
-``` mkdir PAVE/data/mimic-iii-data
+``` 
+mkdir PAVE/data/mimic-iii-data
 ```
 
 Put the following MIMIC-III files in `PAVE/data/mimic-iii-data` 
