@@ -66,7 +66,7 @@ label_df = merged_df[['subject_id', 'hospital_expire_flag']].rename(columns={"su
 data_df = merged_df[['subject_id', 'charttime', 'label_grp', 'valuenum']].rename(columns={"subject_id": "id", "charttime": "time"}).drop_duplicates()
 data_df_wide = pd.pivot_table(data_df, index=['id', 'time'], values='valuenum', columns=['label_grp'], aggfunc=np.mean).reset_index()
   
-demo_df.to_csv('PAVE/data/demo.csv')  
-label_df.to_csv('PAVE/data/label.csv')  
-data_df_wide.to_csv('PAVE/data/data.csv')  
+demo_df.to_csv('PAVE/data/demo.csv', index=False)  
+label_df.to_csv('PAVE/data/label.csv', index=False)  
+data_df_wide.to_csv('PAVE/data/data.csv', index=False)  
 
