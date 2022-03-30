@@ -39,10 +39,16 @@ def recode_label(row):
 d_varitems['LABEL_GRP'] = d_varitems.apply(recode_label, axis=1)
 
 # Filter selected variables in chart events, drop NAs
-events = events[(events['ITEMID'].isin(d_varitems['ITEMID'])) & (~events['VALUENUM'].isna())]
+events_f = events.copy()
+events_f = events_f[(events_f['ITEMID'].isin(d_varitems['ITEMID'])) & (~events_f['VALUENUM'].isna())]
+
+# Keep only most recent admission per patient
+admissions_f = admissions.copy()
+admissions_f['ADMITTIME'] = admissions_f['ADMITTIME'].apply(pd.to_datetime, errors='coerce')
+admissions_f = admissions_f.sort_values(['SUBJECT_ID', 'ADMITTIME'], ascending=False).groupby('SUBJECT_ID').first().reset_index()
 
 # Merge dfs
-merged_df = events.merge(admissions, on=['SUBJECT_ID','HADM_ID']).merge(d_varitems, on='ITEMID').merge(patients, on='SUBJECT_ID')
+merged_df = admissions_f.merge(events_f, on=['SUBJECT_ID','HADM_ID']).merge(d_varitems, on='ITEMID').merge(patients, on='SUBJECT_ID')
 merged_df.columns = map(str.lower, merged_df.columns)
 
 # Convert dtypes
