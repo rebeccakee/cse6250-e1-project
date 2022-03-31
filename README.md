@@ -14,17 +14,20 @@ Your repo should include detailed documents (README file) telling readers:
 
 ### 1. Prepare environment and files
 
-First, build the required environment
+1. Build the required environment
 ```
 pip install -r requirement.txt
 ```
 
-Create a folder for MIMIC-III data
+2. Create various folders to store data and output
 ``` 
 mkdir PAVE/data/mimic-iii-data
+mkdir PAVE/result
+mkdir PAVE/data
+mkdir PAVE/data/models
 ```
 
-Put the following MIMIC-III files in `PAVE/data/mimic-iii-data` 
+3. Put the following MIMIC-III files in `PAVE/data/mimic-iii-data` 
 * ADMISSIONS.csv
 * CHARTEVENTS.csv
 * D_ITEMS.csv
@@ -32,7 +35,7 @@ Put the following MIMIC-III files in `PAVE/data/mimic-iii-data`
 
 ### 2. Data preprocessing
 
-Run `process_mimic.py` to transform the raw MIMIC-III data. 
+1. Run `process_mimic.py` to transform the raw MIMIC-III data 
 ```
 python process_mimic.py
 ```
@@ -41,14 +44,7 @@ This will output the following files in PAVE/data:
 * label.csv: ground truth
 * data.csv: temporal records
 
-Create folders for additional data preprocessing output
-```
-mkdir PAVE/result
-mkdir PAVE/data
-mkdir PAVE/data/models
-```
-
-Generate json files for PAVE model
+2. Save input data as json files for PAVE model
 ```
 cd PAVE/preprocessing/
 python gen_master_feature.py 
