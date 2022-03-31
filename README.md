@@ -32,7 +32,7 @@ Put the following MIMIC-III files in `PAVE/data/mimic-iii-data`
 
 ### 2. Data preprocessing
 
-Run `script.py` to transform the raw MIMIC-III data. This will output the following files in PAVE/data:
+Run `process_mimic.py` to transform the raw MIMIC-III data. This will output the following files in PAVE/data:
 * demo.csv: patients' demographics
 * label.csv: ground truth
 * data.csv: temporal records
