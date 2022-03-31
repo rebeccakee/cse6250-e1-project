@@ -56,12 +56,12 @@ python gen_label.py
 
 ### 3. Model training
 
-Train and validate the PAVE model, the best model will be saved in ../data/models/
+Train and validate the PAVE model, the best model will be saved in PAVE/data/models/
 ```
 cd ../code/
 python main.py 
 ```
 ### 4. Test model
 ```
-python main.py --phase test --resume ../data/models/best.ckpt
+python main.py --phase test --resume PAVE/data/models/best.ckpt
 ```
