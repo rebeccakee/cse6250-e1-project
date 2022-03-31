@@ -48,11 +48,9 @@ def gen_patient_master_dict(master_list):
 
 def main():
     master_list = gen_master_feature_list()
-    print(len(master_list))
+    print("Number of unique demographics:", len(master_list))
     gen_patient_master_dict(master_list)
-
-
-
+    print("gen_master_feature: Done!")
 
 
 if __name__ == '__main__':
