@@ -48,7 +48,8 @@ Generate json files for PAVE model
 ```
 cd PAVE/preprocessing/
 python gen_master_feature.py 
-python gen_feature_time.py 
+python gen_feature_time.py
+python gen_feature_order.py 
 python gen_vital_feature.py 
 python gen_label.py 
 ```
