@@ -45,7 +45,6 @@ parser.add_argument(
         '-m',
         type=str,
         default='attention',
-        # default='lstm',
         help='model'
         )
 parser.add_argument(
@@ -177,10 +176,6 @@ parser.add_argument(
         default=0,
         help='final'
         )
-
-
-
-
 parser.add_argument('--phase',
         default='train',
         type=str,
@@ -191,7 +186,7 @@ parser.add_argument(
         '-b',
         metavar='BATCH SIZE',
         type=int,
-        default=16,
+        default=64,
         help='batch size'
         )
 parser.add_argument('--save-dir',
@@ -206,8 +201,6 @@ parser.add_argument('--resume',
         help='start from checkpoints')
 parser.add_argument('--task',
         default='mortality',
-        # default='phy',
-        # default='sepsis',
         type=str,
         metavar='S',
         help='start from checkpoints')
@@ -232,8 +225,6 @@ parser.add_argument(
         type=int,
 		help='at most input n visits'
 		)
-
-#####
 parser.add_argument('-j',
         '--workers',
         default=8,
@@ -242,12 +233,12 @@ parser.add_argument('-j',
         help='number of data loading workers (default: 32)')
 parser.add_argument('--lr',
         '--learning-rate',
-        default=0.001,
+        default=0.0001,
         type=float,
         metavar='LR',
         help='initial learning rate')
 parser.add_argument('--epochs',
-        default=20,
+        default=50,
         type=int,
         metavar='N',
         help='number of total epochs to run')
