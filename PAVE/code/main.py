@@ -2,11 +2,9 @@
 
 
 '''
-main.py 为程序入口
+main.py
 '''
 
-
-# 基本依赖包
 import os
 import sys
 import time
@@ -27,18 +25,13 @@ from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 
-
-# 自定义文件
 import loss
 import models
 import function
 import loaddata
-# import framework
 from loaddata import dataloader
 from models import attention
 
-
-# 全局变量
 args = parse.args
 args.hard_mining = 0
 if torch.cuda.is_available():
@@ -47,8 +40,9 @@ else:
     args.gpu = 0
 
 if args.model == 'attention':
-    args.epochs = max(30, args.epochs)
-    
+    # args.epochs = max(30, args.epochs)
+    args.epochs = 5
+
 args.use_trend = max(args.use_trend, args.use_value)
 args.use_value = max(args.use_trend, args.use_value)
 args.rnn_size = args.embed_size
@@ -64,19 +58,17 @@ def my_tqdm(x):
 
 def train_eval(p_dict, phase='train'):
     print(args.model)
-    ### 传入参数
     epoch = p_dict['epoch']
-    model = p_dict['model']           # 模型
-    loss = p_dict['loss']             # loss 函数
+    model = p_dict['model']          
+    loss = p_dict['loss']            
     if phase == 'train':
-        data_loader = p_dict['train_loader']        # 训练数据
-        optimizer = p_dict['optimizer']             # 优化器
+        data_loader = p_dict['train_loader']
+        optimizer = p_dict['optimizer']
         model.train()
     else:
         data_loader = p_dict['val_loader']
         model.eval()
 
-    ### 局部变量定义
     classification_metric_dict = dict()
 
     for i,data in enumerate(tqdm(data_loader)):
@@ -95,19 +87,12 @@ def train_eval(p_dict, phase='train'):
 
         classification_loss_output = loss(output, labels, args.hard_mining)
         loss_gradient = classification_loss_output[0]
-        # 计算性能指标
         function.compute_metric(output, labels, time, classification_loss_output, classification_metric_dict, phase)
 
-
-        # 训练阶段
         if phase == 'train':
             optimizer.zero_grad()
             loss_gradient.backward()
             optimizer.step()
-
-        # if i >= 10:
-        #     break
-
 
     print('\nEpoch: {:d} \t Phase: {:s} \n'.format(epoch, phase))
     metric = function.print_metric('classification', classification_metric_dict, phase)
@@ -158,22 +143,18 @@ def main():
             patient_test  = patients[n_train+n_valid:]
 
         args.master_size = len(patient_master_dict[patients[0]])
-    elif args.task == 'sepsis':
-        patient_time_record_dict = py_op.myreadjson(os.path.join(args.result_dir, 'sepsis_time_record_dict.json'))
-        patient_master_dict = py_op.myreadjson(os.path.join(args.result_dir, 'patient_master_dict.json'))
-        patient_label_dict = py_op.myreadjson(os.path.join(args.result_dir, 'sepsis_label_dict.json'))
-        sepsis_split = py_op.myreadjson(os.path.join(args.result_dir, 'sepsis_split.json'))
-        print(sepsis_split.keys())
-        sepsis_split = sepsis_split[str(- args.last_time)]
+    # elif args.task == 'sepsis':
+    #     patient_time_record_dict = py_op.myreadjson(os.path.join(args.result_dir, 'sepsis_time_record_dict.json'))
+    #     patient_master_dict = py_op.myreadjson(os.path.join(args.result_dir, 'patient_master_dict.json'))
+    #     patient_label_dict = py_op.myreadjson(os.path.join(args.result_dir, 'sepsis_label_dict.json'))
+    #     sepsis_split = py_op.myreadjson(os.path.join(args.result_dir, 'sepsis_split.json'))
+    #     print(sepsis_split.keys())
+    #     sepsis_split = sepsis_split[str(- args.last_time)]
     
-        patient_train = sepsis_split['train']
-        patient_valid = sepsis_split['valid']
-        print('train: {:d}'.format(len(patient_train)))
-        print('valid: {:d}'.format(len(patient_valid)))
-
-
-
-
+    #     patient_train = sepsis_split['train']
+    #     patient_valid = sepsis_split['valid']
+    #     print('train: {:d}'.format(len(patient_train)))
+    #     print('valid: {:d}'.format(len(patient_valid)))
 
 
     print ('data loading ...')
@@ -240,9 +221,6 @@ def main():
     p_dict['optimizer'] = optimizer
     p_dict['model'] = net
     start_epoch = 0
-    # args.epoch = start_epoch
-    # print ('best_f1score' + str(best_f1score))
-
     p_dict['epoch'] = 0
     p_dict['best_metric'] = [0, 0]
 

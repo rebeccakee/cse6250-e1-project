@@ -29,7 +29,6 @@ class ScaledDotProductAttention(nn.Module):
         super(ScaledDotProductAttention, self).__init__()
         self.temper = np.power(d_model, 0.5)
         self.dropout = nn.Dropout(attn_dropout)
-        # self.softmax = BottleSoftmax()
         self.softmax = nn.Softmax(2)
         self.pooling = nn.AdaptiveMaxPool1d(1)
 
@@ -94,7 +93,6 @@ class MultiHeadAttention(nn.Module):
 
         residual = q
 
-        # print 'q.size', q.size()
         mb_size, len_q, d_model = q.size()
         mb_size, len_k, d_model = k.size()
         mb_size, len_v, d_model = v.size()
@@ -109,8 +107,6 @@ class MultiHeadAttention(nn.Module):
         k_s = torch.bmm(k_s, self.w_ks).view(-1, len_k, d_k)   # (n_head*mb_size) x len_k x d_k
         v_s = torch.bmm(v_s, self.w_vs).view(-1, len_v, d_v)   # (n_head*mb_size) x len_v x d_v
 
-        # perform attention, result size = (n_head * mb_size) x len_q x d_v
-        # outputs, attns = self.attention(q_s, k_s, v_s, attn_mask=attn_mask.repeat(n_head, 1, 1))
         outputs, attns = self.attention(q_s, k_s, v_s)
 
         # back to original mb_size batch, result size = mb_size x len_q x (n_head*d_v)
@@ -124,7 +120,6 @@ class MultiHeadAttention(nn.Module):
         outputs = self.linear(torch.cat((residual, outputs), 2))
 
         return outputs, attns.data.cpu().numpy()
-        # return outputs + residual
 
 
 def value_embedding_data(d = 512, split = 100):
@@ -145,9 +140,6 @@ class Attention(nn.Module):
         self.value_embedding = nn.Embedding.from_pretrained(value_embedding_data(args.embed_size, args.n_split + 1))
         self.xv_mapping = nn.Sequential( nn.Linear (2 * args.embed_size, args.embed_size ) , nn.ReLU(), nn.Linear (args.embed_size, args.embed_size ) )
 
-        # self.q_embedding = nn.Embedding (args.vocab_size, args.embed_size ) 
-        # self.k_embedding = nn.Embedding (args.vocab_size, args.embed_size ) 
-        # self.v_embedding = nn.Embedding (args.vocab_size, args.embed_size ) 
         self.q_mapping = nn.Sequential( nn.Linear (args.embed_size, args.embed_size ) , nn.ReLU(), nn.Linear (args.embed_size, args.embed_size ) )
         self.k_mapping = nn.Sequential( nn.Linear (args.embed_size, args.embed_size ) , nn.ReLU(), nn.Linear (args.embed_size, args.embed_size ) )
         self.v_mapping = nn.Sequential( nn.Linear (args.embed_size, args.embed_size ) , nn.ReLU(), nn.Linear (args.embed_size, args.embed_size ) )
@@ -207,7 +199,6 @@ class Attention(nn.Module):
         x = x.view(s1, size[dim], s3)
         x = torch.transpose(x, 1,2).contiguous()
         x, idx = self.pooling_with_indices(x)
-        # x = self.pooling(x)
         new_size = size[:dim] + size[dim+1:]
         x = x.view(new_size)
         return x, idx
@@ -234,21 +225,13 @@ class Attention(nn.Module):
         k = self.attention_mapping(x)                   # (bs, n_visit * n_code, 512)
         a = self.sigmoid(k * m)                         # (bs, n_visit * n_code, 512)
         x = x + a * m                                   # (bs, n_visit * n_code, 512)
-        # x = x.view(x_size + [-1])                       # (bs, n_visit * n_code, 512)
         return x
 
     def attend_pattern(self, x):
         paw = self.paw(x)                               # (bs, n_visit * n_code, 1)
-        # print('paw', paw.data.cpu().numpy().sum())
-        # paw = paw.expand(x.size())
-        # x = paw * x
         paw = paw.transpose(1,2)                        # (bs, 1, n_visit * n_code)
-        # print('paw.size', paw.size())
-        # print('x.size', x.size())
         x = torch.bmm(paw, x)                           # (bs, 1, 512)
-        # print('x.size', x.size())
         x = x.view((x.size(0), -1))
-        # print('x.size', x.size())
         return x, paw
 
 
@@ -271,9 +254,7 @@ class Attention(nn.Module):
 
         e_t = e_t.unsqueeze(2).contiguous()
         e_t = e_t.expand(x_size + [e_t.size(3)]).contiguous()
-        # print('e_t', e_t.size())
         e_t = e_t.view(x_size[0], -1, args.embed_size)    # (bs, n_visit * n_code, 512 )
-        # print('e_t', e_t.size())
         q_x = q_x.view(x_size[0], -1, args.embed_size)    # (bs, n_visit * n_code, 512 )
         k_x = k_x.view(x_size[0], -1, args.embed_size)    # (bs, n_visit * n_code, 512 )
         v_x = v_x.view(x_size[0], -1, args.embed_size)    # (bs, n_visit * n_code, 512 )
