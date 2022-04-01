@@ -53,7 +53,8 @@ class ScaledDotProductAttention(nn.Module):
         pattn = pattn.expand(attn.size())
         mask = np.zeros(attn.size(), dtype=np.float32)
         mask[pattn.data.cpu().numpy() == attn.data.cpu().numpy()] = 1
-        mask = Variable(torch.from_numpy(mask).cuda())
+        # mask = Variable(torch.from_numpy(mask).cuda())
+        mask = Variable(torch.from_numpy(mask))
         attn = attn * mask
 
         attn = self.dropout(attn)
@@ -82,9 +83,9 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.linear = nn.Linear(d_model * 2, d_model )
 
-        init.xavier_normal(self.w_qs)
-        init.xavier_normal(self.w_ks)
-        init.xavier_normal(self.w_vs)
+        init.xavier_normal_(self.w_qs)
+        init.xavier_normal_(self.w_ks)
+        init.xavier_normal_(self.w_vs)
 
     def forward(self, q, k, v, attn_mask=None):
 
@@ -213,7 +214,7 @@ class Attention(nn.Module):
 
 
     def attend_demo(self, xv, m, x):
-        if self.args.use_value_embedding:
+        if self.args.use_value:
             x = xv[:, :, 0, :].contiguous()
             v = xv[:, :, 1, :].contiguous()
             x_size = list(x.size())                         # (bs, n_visit, n_code)
