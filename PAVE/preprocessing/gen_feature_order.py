@@ -11,7 +11,6 @@ args = parse.args
 
 def time_to_min(t):
     t = t.replace('"', '')
-    # t = time.mktime(time.strptime(t.replace('"', '')))
     t = time.mktime(time.strptime(t,'%Y-%m-%d %H:%M:%S'))
     t = t / 60
     return int(t)
@@ -30,9 +29,7 @@ def gen_feature_order_dict():
     for i_line,line in enumerate(open(vital_file)):
         line = line.strip().replace('"', '')
         if i_line % 10000 == 0:
-            print(i_line) 
-        # if i_line > 10000:
-        #     break
+            print("Processing... At line", i_line) 
         if i_line == 0:
             new_line = ''
             vis = 0
@@ -53,16 +50,10 @@ def gen_feature_order_dict():
             for col,ctt in zip(col_list, ctt_list):
                 if len(ctt):
                     vital_dict[col].append(ctt)
-        # if i_line > 10000:
-        #    break
-        # if i_line % 10000 == 0:
-        #     print(i_line) 
-
 
 
     feature_count_dict = { k: len(v) for k,v in vital_dict.items() }
     py_op.mywritejson(os.path.join(args.result_dir, 'feature_count_dict.json'), feature_count_dict)
-
 
 
     ms_list = []
@@ -86,35 +77,9 @@ def gen_feature_order_dict():
         feature_value_order_dict[col] = value_order_dict
     py_op.mywritejson(os.path.join(args.result_dir, 'feature_value_order_dict.json'), feature_value_order_dict)
 
-def gen_normal_range_order():
-    feature_value_order_dict = py_op.myreadjson(os.path.join(args.result_dir, 'feature_value_order_dict.json'))
-    index_vital_list = py_op.myreadjson(os.path.join(args.result_dir, 'index_feature_list.json'))
-    vital_normal_range_dict  = py_op.myreadjson(os.path.join(args.result_dir, 'vital_normal_range_dict.json'))
-    feature_normal_range_order_dict = { }
-    for feature, d in feature_value_order_dict.items():
-        if 'time' in feature:
-            continue
-        normal_range = vital_normal_range_dict[feature]
-        values = sorted(d.keys(), key = lambda s:float(s))
-        feature_normal_range_order_dict[feature] = []
-        for v in values:
-            if float(v) > normal_range[0] and len(feature_normal_range_order_dict[feature]) == 0:
-                feature_normal_range_order_dict[feature].append(d[v])
-            if float(v) > normal_range[1] and len(feature_normal_range_order_dict[feature]) == 1:
-                feature_normal_range_order_dict[feature].append(d[v])
-                break
-    print(feature_normal_range_order_dict) 
-    py_op.mywritejson(os.path.join(args.result_dir, 'feature_normal_range_order_dict.json'), feature_normal_range_order_dict)
-
-
-
-
 def main():
     gen_feature_order_dict()
-    gen_normal_range_order()
-
-
-
+    print("gen_feature_order: Done!")
 
 
 if __name__ == '__main__':
