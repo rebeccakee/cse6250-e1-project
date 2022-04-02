@@ -23,7 +23,7 @@ class DataSet(Dataset):
             patient_master_dict,
             phase='train',          # phase
             split_num=5,            # split feature value into different parts
-            args=None               # 全局参数
+            args=None               
             ):
 
         self.patient_list = patient_list
@@ -39,16 +39,10 @@ class DataSet(Dataset):
         self.last_time = args.last_time
         self.length = 24
         self.n_code = 8
-        # self.feature_normal_range_order_dict = json.load(open('../result/phy_feature_normal_range_order_dict.json'))
-        # self.index_feature_list = json.load(open('../result/index_feature_list.json'))
 
     def get_visit_info_wi_normal_range(self, time_record_dict):
-        # times = sorted([float(t) for t in time_record_dict.keys()])
         times = sorted(time_record_dict.keys(), key=lambda s:float(s))
         max_time = float(times[-1])
-        # print(times[-24:])
-        # for t in time_record_dict:
-        #     time_record_dict[str(float(t))] = time_record_dict[t]
         visit_list = []
         value_list = []
         mask_list = []
@@ -73,15 +67,12 @@ class DataSet(Dataset):
                 continue
             time = str(time)
             records = time_record_dict[time].items()
-            # records = time_record_dict[time]
-            # print(records)
             feature_index = [int(r[0]) for r in records]
             feature_value = [float(r[1]) for r in records]
 
             # embed feature value
             feature_index = np.array(feature_index)
             feature_value = np.array(feature_value)
-            # feature = feature_index * self.split_nn + feature_value * self.split_num
             feature = feature_index * self.split_nn
 
             # trend
@@ -123,9 +114,6 @@ class DataSet(Dataset):
                 i_v += 1
 
 
-
-
-
             visit = np.zeros(n_code, dtype=np.int64)
             mask = np.zeros(n_code, dtype=np.int64)
             i_v = 0
@@ -134,7 +122,6 @@ class DataSet(Dataset):
                 # order
                 mask[i_v] = 1
                 visit[i_v] = int(feat + 1)
-                # normal_range = self.feature_normal_range_order_dict[self.index_feature_list[idx]]
                 normal_range = [0.4, 0.6]
 
                 range_value = 0
@@ -157,11 +144,9 @@ class DataSet(Dataset):
                         delta = 0.3
                         if val - last_value < - delta:
                             delta_value = 0
-                            # print(err)
                             feature_last_value[idx] = val
                         elif val - last_value > delta:
                             delta_value = 2
-                            # print(err)
                             feature_last_value[idx] = val
                     else:
                         feature_last_value[idx] = val
@@ -210,10 +195,7 @@ class DataSet(Dataset):
 
 
     def get_visit_info_wo_normal_range(self, time_record_dict):
-        # times = sorted([float(t) for t in time_record_dict.keys()])
         times = sorted(time_record_dict.keys(), key=lambda s:float(s))
-        # for t in time_record_dict:
-        #     time_record_dict[str(float(t))] = time_record_dict[t]
         visit_list = []
         value_list = []
         mask_list = []
@@ -236,7 +218,6 @@ class DataSet(Dataset):
                 continue
             time = str(time)
             records = time_record_dict[time].items()
-            # print (records)
             feature_index = [int(r[0]) for r in records]
             feature_value = [float(r[1]) for r in records]
 
@@ -284,9 +265,6 @@ class DataSet(Dataset):
                 i_v += 1
 
 
-
-
-
             visit = np.zeros(n_code, dtype=np.int64)
             mask = np.zeros(n_code, dtype=np.int64)
             i_v = 0
@@ -297,8 +275,6 @@ class DataSet(Dataset):
                 visit[i_v] = int(feat + 1)
                 i_v += 1
 
-
-                    
 
             value = np.zeros((2, n_code ), dtype=np.int64)
             value[0][: len(feature_index)] = feature_index + 1
@@ -340,11 +316,7 @@ class DataSet(Dataset):
         if self.args.use_visit:
             visit_list, value_list, mask_list, time_list, trend_list,  init_data= self.get_visit_info_wi_normal_range(self.patient_time_record_dict[patient])
             v = value_list[:, 0, :]
-            # print(v.min(), v.max())
             v = value_list[:, 1, :]
-            # print(v.min(), v.max())
-            # print('----')
-            # print('----')
             if os.path.exists(self.args.master_file):
                 master = self.patient_master_dict[patient]
                 master = [int(m) for m in master]
@@ -360,7 +332,6 @@ class DataSet(Dataset):
                 with open(os.path.join(self.args.result_dir, 'cr', patient + '.init.json'), 'w') as f:
                     f.write(json.dumps(init_data, indent=4))
             if visit_list.max() > 121:
-                # print(visit_list.max())
                 pass
             if self.phase == 'test':
                 return visit_list, value_list, mask_list, master, label, time_list, trend_list, patient
