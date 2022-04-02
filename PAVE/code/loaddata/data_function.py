@@ -33,8 +33,6 @@ def numpy_to_image(image):
 
 def add_line(bbox_image, bbox, gray=128, proposal=0):
 
-    # print(bbox, bbox_image.shape) 
-
     sx,sy,ex,ey = bbox[:4]
     _,x,y = bbox_image.shape # 3, 64, 512
 
@@ -80,24 +78,18 @@ def test_label(image_file, seg_file, bbox_file, save_folder):
     image.save(os.path.join(save_folder, '_bbox.png'))
 
 def generate_bbox_seg(image, font_place, font_size, font_list):
-    '''
-    只生成框位置坐标
-    '''
+
     imgh,imgw = image.size
     font_num = len(font_list)
 
-    # 生成分割label
     seg_label = np.zeros((3, image.size[1], image.size[0]), dtype=np.uint8) + 255
     sy = font_place[0]
     ey = sy + font_size * font_num
     sx = font_place[1]
     ex = sx + font_size
     seg_label[:, sx:ex, sy:ey] = 128
-    # seg_label = seg_label.transpose((1,0,2))
-    # seg_label = Image.fromarray(seg_label)
     seg_label = numpy_to_image(seg_label)
 
-    # 生成bbox label
     bbox_label = []
     for i, font in enumerate(font_list):
         sx = font_place[0] + font_size * i
@@ -106,8 +98,6 @@ def generate_bbox_seg(image, font_place, font_size, font_list):
         ey = sy + font_size
         bbox_label.append([sy,sx,ey,ex,font])
 
-    # 生成bbox_image
-    # bbox_image = np.zeros((3, image.size[0], image.size[1]), dtype=np.uint8) + 255
     bbox_image = image_to_numpy(image)
     for bbox in bbox_label:
         bbox_image = add_line(bbox_image, bbox)
@@ -118,9 +108,7 @@ def generate_bbox_seg(image, font_place, font_size, font_list):
 
 
 def generate_bbox_label(image, font_place, font_size, font_num, args, image_size):
-    '''
-    根据anchors生成监督信息
-    '''
+
     imgh,imgw = image.size
     seg_label = np.zeros((int(image_size[0]/2), int(image_size[1]/2)), dtype=np.float32)
     sx = float(font_place[0]) / image.size[0] * image_size[0]
@@ -149,7 +137,6 @@ def generate_bbox_label(image, font_place, font_size, font_num, args, image_size
         w = float(w) * image_size[1] / imgw
         fonts.append([x,y,h,w])
 
-    # print bbox_label.shape
     for ix in range(bbox_label.shape[0]):
         for iy in range(bbox_label.shape[1]):
             for ia in range(bbox_label.shape[2]):
@@ -160,24 +147,18 @@ def generate_bbox_label(image, font_place, font_size, font_num, args, image_size
                     iou_fi.append((iou, fi))
                 max_iou, max_fi = sorted(iou_fi)[-1]
                 if max_iou > 0.5:
-                    # 正例
                     dx = (font[0] - proposal[0]) / float(proposal[2])
                     dy = (font[1] - proposal[1]) / float(proposal[2])
                     fd = max(font[2:])
                     dd = np.log(fd / float(proposal[2]))
-                    # bbox_label[ix,iy,ia] = [dx, dy, dd, 1]
                     bbox_label[ix,iy,ia] = [dx, dy, dd, 1]
                 elif max_iou > 0.25:
-                    # 忽略
                     bbox_label[ix,iy,ia,3] = 0
                 else:
-                    # 负例
                     bbox_label[ix,iy,ia,3] = -1
-    # 这里有一个transpose操作
     bbox_label = bbox_label.transpose((1,0,2,3))
 
 
-                # 计算anchor信息
     return bbox_label, seg_label
 
 def augment(image, seg, bbox, label):
@@ -185,17 +166,9 @@ def augment(image, seg, bbox, label):
 
 def random_select_indices(indices, n=10):
     indices = np.array(indices)
-    # print('initial shape', indices.shape) 
     indices = indices.transpose(1,0)
-    # print('change shape', indices.shape) 
     np.random.shuffle(indices)
     indices = indices[:n]
-    # print('select ', indices.shape) 
     indices = indices.transpose(1,0)
-    # print('change shape', indices.shape) 
-    # indices = tuple(indices)
     return tuple(indices)
 
-
-
-# test_label( '../../data/generated_images/1.png', '../../data/generated_images/1_seg.png', '../../data/generated_images/1_bbox.json', '../../data/test/')
