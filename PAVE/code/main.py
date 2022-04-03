@@ -41,7 +41,7 @@ else:
 
 if args.model == 'attention':
     # args.epochs = max(30, args.epochs)
-    args.epochs = 5
+    args.epochs = 2
 
 args.use_trend = max(args.use_trend, args.use_value)
 args.use_value = max(args.use_trend, args.use_value)
@@ -96,19 +96,15 @@ def train_eval(p_dict, phase='train'):
 
     print('\nEpoch: {:d} \t Phase: {:s} \n'.format(epoch, phase))
     metric = function.print_metric('classification', classification_metric_dict, phase)
-    if args.phase != 'train':
-        print ('metric = ', metric)
-        print()
-        print()
     if phase == 'val':
         if metric > p_dict['best_metric'][0]:
             p_dict['best_metric'] = [metric, epoch]
             function.save_model(p_dict)
 
-        print('valid: metric: {:3.4f}\t epoch: {:d}\n'.format(metric, epoch))
-        print('\t\t\t valid: best_metric: {:3.4f}\t epoch: {:d}\n'.format(p_dict['best_metric'][0], p_dict['best_metric'][1]))  
+        print('valid: auc: {:3.4f}\t epoch: {:d}\n'.format(metric, epoch))
+        print('\t\t\t valid: best_auc: {:3.4f}\t epoch: {:d}\n'.format(p_dict['best_metric'][0], p_dict['best_metric'][1]))  
     else:
-        print('train: metric: {:3.4f}\t epoch: {:d}\n'.format(metric, epoch))
+        print('train: accuracy: {:3.4f}\t epoch: {:d}\n'.format(metric, epoch))
 
 
 

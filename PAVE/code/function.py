@@ -203,7 +203,7 @@ def print_metric(first_line, metric_dict, phase='train'):
         fpr, tpr, thr = metrics.roc_curve(metric_dict['labels'], metric_dict['preds'])
         return metrics.auc(fpr, tpr)
     else:
-        return f1score
+        return accuracy
 
 def load_all():
     fo = '../data/models'
