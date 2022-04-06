@@ -4,12 +4,6 @@ This repo contains our source code for reproducing the findings in  [Kamal et al
 
 Authors: Rebecca Kee, Na Wu
 
-Your repo should include detailed documents (README file) telling readers:
-* Dependencies (which packages are required)
-* Download instruction of data and pretrained model (if applicable)
-* Functionality of scripts: preprocessing, training, evaluation, etc.
-* Instruction to run the code
-
 ## Instructions to run code
 
 ### 1. Prepare environment and files
