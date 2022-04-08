@@ -56,14 +56,19 @@ python gen_vital_feature.py
 python gen_label.py 
 ```
 
-### 3. Model training
+### 3. PAVE model training
 
 Train and validate the PAVE model, the best model will be saved in PAVE/data/models/
 ```
 cd ../code/
 python main.py 
 ```
-### 4. Test model
+### 4. Evaluate PAVE model on test set
 ```
 python main.py --phase test --resume PAVE/data/models/best.ckpt
+```
+### 5. Train baseline models and evaluate on test set
+```
+cd ../..
+python baseline.py
 ```
