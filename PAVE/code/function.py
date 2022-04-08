@@ -1,217 +1,93 @@
-# coding=utf8
-#########################################################################
-# File Name: function.py
-# Author: ccyin
-# mail: ccyin04@gmail.com
-# Created Time: 2019年06月12日 星期三 14时28分43秒
-#########################################################################
-
 import os
-
 from sklearn import metrics
 import numpy as np
-
 import torch
-
-# file
 import loaddata
 from tools import parse
+from loaddata import data_function
 
-args = parse.args
+arg_list = parse.args
 
-def save_model(p_dict, name='best.ckpt', folder='../data/models/'):
-    args = p_dict['args']
-    name = '{:s}-{:s}-nl-{:d}-snm-{:d}-snr-{:d}-trend-{:d}-cat-{:d}-lt-{:d}-size-{:d}-{:s}'.format(
-            args.task, args.model,args.num_layers,
-            args.split_num, args.split_nor, args.use_trend, 
-            args.use_cat, args.last_time, args.embed_size, name)
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-    model = p_dict['model']
-    state_dict = model.state_dict()
-    for key in state_dict.keys():
-        state_dict[key] = state_dict[key].cpu()
-    all_dict = {
-            'epoch': p_dict['epoch'],
-            'args': p_dict['args'],
-            'best_metric': p_dict['best_metric'],
-            'state_dict': state_dict 
+def load_models_func(data_dict, model_fileData):
+    all_dict = torch.load(model_fileData)
+    data_dict['epoch'] = all_dict['epoch']
+    data_dict['best_metric'] = all_dict['best_metric']
+    data_dict['model'].load_state_dict(all_dict['state_dict'])
+
+def save_models_func(data_dict, name_str='best.ckpt', folder_path='../data/models/'):
+    temp_arg_list = data_dict['args']
+    name_str = '{:s}-{:s}-nl-{:d}-snm-{:d}-snr-{:d}-trend-{:d}-cat-{:d}-lt-{:d}-size-{:d}-{:s}'.format(
+            temp_arg_list.task, temp_arg_list.model,temp_arg_list.num_layers,
+            temp_arg_list.split_num, temp_arg_list.split_nor, temp_arg_list.use_trend, 
+            temp_arg_list.use_cat, temp_arg_list.last_time, temp_arg_list.embed_size, name_str)
+    if not os.path.exists(folder_path):
+        os.mkdir(folder_path)
+    model_data = data_dict['model']
+    state_data_dict = model_data.state_dict()
+    for key_item in state_data_dict.keys():
+        state_data_dict[key_item] = state_data_dict[key_item].cpu()
+    all_data_dict = {
+            'epoch': data_dict['epoch'],
+            'args': data_dict['args'],
+            'best_metric': data_dict['best_metric'],
+            'state_dict': state_data_dict 
             }
-    torch.save(all_dict, os.path.join(folder, name))
+    torch.save(all_data_dict, os.path.join(folder_path, name_str))
 
-def load_model(p_dict, model_file):
-    all_dict = torch.load(model_file)
-    p_dict['epoch'] = all_dict['epoch']
-    p_dict['best_metric'] = all_dict['best_metric']
-    p_dict['model'].load_state_dict(all_dict['state_dict'])
-
-
-def save_segmentation_results(images, segmentations, folder='../data/middle_segmentation'):
-    stride = args.stride
-
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-
-    images = (images * 128) + 127
-    segmentations[segmentations>0] = 255
-    segmentations[segmentations<0] = 0
-
-    for ii, image, seg in zip(range(len(images)), images, segmentations):
-        image = data_function.numpy_to_image(image)
-        new_seg = np.zeros([3, seg.shape[1] * stride, seg.shape[2] * stride])
-        for i in range(seg.shape[1]):
-            for j in range(seg.shape[2]):
-                for k in range(3):
-                    new_seg[k, i*stride:(i+1)*stride, j*stride:(j+1)*stride] = seg[0,i,j]
-        seg = new_seg
-        seg = data_function.numpy_to_image(seg)
-        image.save(os.path.join(folder, str(ii) + '_image.png'))
-        seg.save(os.path.join(folder, str(ii) + '_seg.png'))
-
-
-def save_middle_results(data, folder = '../data/middle_images'):
-    stride = args.stride
-
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-    numpy_data = [x.data.numpy() for x in data[1:]]
-    data =  data[:1] + numpy_data
-    image_names, images, word_labels, seg_labels, bbox_labels, bbox_images =  data[:6]
-    images = (images * 128) + 127
-    seg_labels = seg_labels*127 + 127
-
-
-    for ii, name, image, seg, bbox_image in zip(range(len(image_names)), image_names, images, seg_labels, bbox_images):
-        name = name.split('/')[-1]
-        image = data_function.numpy_to_image(image)
-        new_seg = np.zeros([3, seg.shape[1] * stride, seg.shape[2] * stride])
-        for i in range(seg.shape[1]):
-            for j in range(seg.shape[2]):
-                for k in range(3):
-                    new_seg[k, i*stride:(i+1)*stride, j*stride:(j+1)*stride] = seg[0,i,j]
-        seg = new_seg
-        seg = data_function.numpy_to_image(seg)
-        image.save(os.path.join(folder, str(ii) + '_image.png'))
-        seg.save(os.path.join(folder, str(ii) + '_seg.png'))
-
-        for ib,bimg in enumerate(bbox_image):
-            bimg = data_function.numpy_to_image(bimg)
-            bimg.save(os.path.join(folder, str(ii)+'_'+ str(ib) + '_bbox.png'))
-
-def save_detection_results(names, images, detect_character_output, folder='../data/test_results/'):
-    stride = args.stride
-
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-    images = (images * 128) + 127
-
-    for i, name, image, bboxes in zip(range(len(names)), names, images, detect_character_output):
-        name = name.split('/')[-1]
-
-        data_function.numpy_to_image(image).save(os.path.join(folder, str(i) + '_image.png'))
-
-        detected_bbox = detect_function.nms(bboxes)
-        image = data_function.add_bbox_to_image(image, detected_bbox)
-        image.save(os.path.join(folder, str(i) + '_bbox.png'))
-
-
-
-def compute_detection_metric(outputs, labels, loss_outputs,metric_dict):
-    loss_outputs[0] = loss_outputs[0].data
-    metric_dict['metric'] = metric_dict.get('metric', []) + [loss_outputs]
-
-def compute_segmentation_metric(outputs, labels, loss_outputs, metric_dict):
-    loss_outputs[0] = loss_outputs[0].data
-    metric_dict['metric'] = metric_dict.get('metric', []) + [loss_outputs]
-
-def compute_metric(outputs, labels, time, loss_outputs,metric_dict, phase='train'):
-    if phase != 'test':
-        preds = outputs.data.cpu().numpy()
-        labels = labels.data.cpu().numpy()
+def compute_metric_func(output_list, label_list, time_data, loss_output_list,metric_data_dict, phase_type='train'):
+    if phase_type != 'test':
+        preds_data = output_list.data.cpu().numpy()
+        label_list = label_list.data.cpu().numpy()
     else:
-        preds = np.array(outputs)
-
-    preds = preds.reshape(-1)
-    labels = labels.reshape(-1)
-
-    assert preds.shape == labels.shape
-
-    preds = preds[labels>-0.5]
-    label = labels[labels>-0.5]
-
-    pred = preds > 0
-
-    assert len(pred) == len(label)
-
-    tp = (pred + label == 2).sum()
-    tn = (pred + label == 0).sum()
-    fp = (pred - label == 1).sum()
-    fn = (pred - label ==-1).sum()
-    fp = (pred - label == 1).sum()
-
-    metric_dict['tp'] = metric_dict.get('tp', 0.0) + tp
-    metric_dict['tn'] = metric_dict.get('tn', 0.0) + tn
-    metric_dict['fp'] = metric_dict.get('fp', 0.0) + fp
-    metric_dict['fn'] = metric_dict.get('fn', 0.0) + fn
-    loss = []
-    for x in loss_outputs:
-        if x == 0:
-            loss.append(x)
+        preds_data = np.array(output_list)
+    preds_data = preds_data.reshape(-1)
+    label_list = label_list.reshape(-1)
+    preds_data = preds_data[label_list>-0.5]
+    label_data = label_list[label_list>-0.5]
+    pred_data = preds_data > 0
+    sum_t_p = (pred_data + label_data == 2).sum()
+    sum_t_n = (pred_data + label_data == 0).sum()
+    sum_f_p = (pred_data - label_data == 1).sum()
+    sum_f_n = (pred_data - label_data ==-1).sum()
+    sum_f_p = (pred_data - label_data == 1).sum()
+    metric_data_dict['tp'] = metric_data_dict.get('tp', 0.0) + sum_t_p
+    metric_data_dict['tn'] = metric_data_dict.get('tn', 0.0) + sum_t_n
+    metric_data_dict['fp'] = metric_data_dict.get('fp', 0.0) + sum_f_p
+    metric_data_dict['fn'] = metric_data_dict.get('fn', 0.0) + sum_f_n
+    temp_loss_list = []
+    for item_x in loss_output_list:
+        if item_x != 0:
+            temp_loss_list.append(item_x.data.cpu().numpy())
         else:
-            loss.append(x.data.cpu().numpy())
-    metric_dict['loss'] = metric_dict.get('loss', []) +  [loss]
-    if phase != 'train':
-        metric_dict['preds'] = metric_dict.get('preds', []) + list(preds)
-        metric_dict['labels'] = metric_dict.get('labels', []) + list(label)
-
-def compute_metric_multi_classification(outputs, labels, loss_outputs, metric_dict):
-    preds = outputs.data.cpu().numpy() > 0
-    labels = labels.data.cpu().numpy()
-    for pred, label in zip(preds, labels):
-        pred = np.argmax(pred)
-        tp = (pred == label ).sum()
-        fn = (pred != label).sum()
-        accuracy = 1.0 * tp / (tp + fn)
-        metric_dict['accuracy'] = metric_dict.get('accuracy', []) + [accuracy]
-    metric_dict['loss'] = metric_dict.get('loss', []) +  [[x.data.cpu().numpy() for x in loss_outputs]]
+            temp_loss_list.append(item_x)
+    metric_data_dict['loss'] = metric_data_dict.get('loss', []) +  [temp_loss_list]
+    if phase_type != 'train':
+        metric_data_dict['preds'] = metric_data_dict.get('preds', []) + list(preds_data)
+        metric_data_dict['labels'] = metric_data_dict.get('labels', []) + list(label_data)
+        
 
 
-def print_metric(first_line, metric_dict, phase='train'):
-    print(first_line)
+def print_metric_func(first_line_str, metric_data_dict, phase_type='train'):
+    print(first_line_str)
     try:
-        loss_array = np.array(metric_dict['loss']).mean(0)
+        loss_arr = np.array(metric_data_dict['loss']).mean(0)
     except:
-        loss_array = np.array([0, 0, 0])
-    tp = metric_dict['tp']
-    tn = metric_dict['tn']
-    fp = metric_dict['fp']
-    fn = metric_dict['fn']
-    accuracy = 1.0 * (tp + tn) / (tp + tn + fp + fn)
-    recall = 1.0 * tp / (tp + fn + 10e-20)
-    precision = 1.0 * tp / (tp + fp + 10e-20)
-    f1score = 2.0 * recall * precision / (recall + precision + 10e-20)
-
-
-    
-    loss_array = loss_array.reshape(-1)
-
-    print('loss: {:3.4f}\t pos loss: {:3.4f}\t negloss: {:3.4f}'.format(loss_array[0], loss_array[1], loss_array[2]))
-    print('accuracy: {:3.4f}\t f1score: {:3.4f}\t recall: {:3.4f}\t precision: {:3.4f}'.format(accuracy, f1score, recall, precision))
+        loss_arr = np.array([0, 0, 0])
+    t_p = metric_data_dict['tp']
+    t_n = metric_data_dict['tn']
+    f_p = metric_data_dict['fp']
+    f_n = metric_data_dict['fn']
+    accuracy_data = 1.0 * (t_p + t_n) / (t_p + t_n + f_p + f_n)
+    recall_data = 1.0 * t_p / (t_p + f_n + 10e-20)
+    precision_data = 1.0 * t_p / (t_p + f_p + 10e-20)
+    f1score_data = 2.0 * recall_data * precision_data / (recall_data + precision_data + 10e-20)
+    loss_arr = loss_arr.reshape(-1)
+    print('loss: {:3.4f}\t pos loss: {:3.4f}\t negloss: {:3.4f}'.format(loss_arr[0], loss_arr[1], loss_arr[2]))
+    print('accuracy: {:3.4f}\t f1score: {:3.4f}\t recall: {:3.4f}\t precision: {:3.4f}'.format(accuracy_data, f1score_data, recall_data, precision_data))
     print('\n')
-
-    if phase != 'train':
-        fpr, tpr, thr = metrics.roc_curve(metric_dict['labels'], metric_dict['preds'])
-        return metrics.auc(fpr, tpr)
+    if phase_type == 'train':
+        return f1score_data
     else:
-        return accuracy
-
-def load_all():
-    fo = '../data/models'
-    pre = ''
-    for fi in sorted(os.listdir(fo)):
-        if fi[:5] != pre:
-            print()
-            pre = fi[:5]
-        x = torch.load(os.path.join(fo, fi))
-        print(x['best_metric'], fi) 
-
+        fpr, tpr, thr = metrics.roc_curve(metric_data_dict['labels'], metric_data_dict['preds'])
+        return metrics.auc(fpr, tpr)
+        

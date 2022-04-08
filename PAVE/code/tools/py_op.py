@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 """
 此文件用于常用python函数的使用
 """
@@ -9,16 +9,16 @@ from collections import OrderedDict
 import random
 
 import sys
-# reload(sys)
-# sys.setdefaultencoding('utf-8')
 
-################################################################################
-### pre define variables
-#:: enumerate
-#:: raw_input
-#:: listdir
-#:: sorted
-### pre define function
+
+
+
+
+
+
+
+
+
 def mywritejson(save_path,content):
     content = json.dumps(content,indent=4,ensure_ascii=False)
     with open(save_path,'w') as f:

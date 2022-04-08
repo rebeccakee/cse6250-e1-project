@@ -1,9 +1,3 @@
-# coding=utf8
-
-
-'''
-main.py
-'''
 
 import os
 import sys
@@ -14,9 +8,6 @@ import numpy as np
 from glob import glob
 from tqdm import tqdm
 from tools import parse, py_op
-
-
-# torch
 import torch
 import torchvision
 import torch.nn as nn
@@ -24,7 +15,6 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
-
 import loss
 import models
 import function
@@ -32,216 +22,194 @@ import loaddata
 from loaddata import dataloader
 from models import attention
 
-args = parse.args
-args.hard_mining = 0
+arg_list = parse.args
+arg_list.hard_mining = 0
 if torch.cuda.is_available():
-    args.gpu = 1
+    arg_list.gpu = 1
 else:
-    args.gpu = 0
+    arg_list.gpu = 0
 
-if args.model == 'attention':
-    # args.epochs = max(30, args.epochs)
-    args.epochs = 2
+if arg_list.model == 'attention':
+    arg_list.epochs = max(30, arg_list.epochs)
 
-args.use_trend = max(args.use_trend, args.use_value)
-args.use_value = max(args.use_trend, args.use_value)
-args.rnn_size = args.embed_size
-args.hidden_size = args.embed_size
-if args.num_layers > 1 or args.model != 'attention':
-    args.compute_weight = 0
-args.compute_weight = 0
-
-def my_tqdm(x):
-    tqdm(x)
-    return x
+arg_list.use_trend = max(arg_list.use_trend, arg_list.use_value)
+arg_list.use_value = max(arg_list.use_trend, arg_list.use_value)
+arg_list.rnn_size = arg_list.embed_size
+arg_list.hidden_size = arg_list.embed_size
+if arg_list.num_layers > 1 or arg_list.model != 'attention':
+    arg_list.compute_weight = 0
+arg_list.compute_weight = 0
 
 
-def train_eval(p_dict, phase='train'):
-    print(args.model)
-    epoch = p_dict['epoch']
-    model = p_dict['model']          
-    loss = p_dict['loss']            
-    if phase == 'train':
-        data_loader = p_dict['train_loader']
-        optimizer = p_dict['optimizer']
-        model.train()
+def train_eval_func(data_dict, phase_type='train'):
+    epoch_data = data_dict['epoch']
+    model_data = data_dict['model']
+    loss_data = data_dict['loss']
+    if phase_type != 'train':
+        data_loader = data_dict['val_loader']
+        model_data.eval()
     else:
-        data_loader = p_dict['val_loader']
-        model.eval()
+        data_loader = data_dict['train_loader']
+        optimizer = data_dict['optimizer']
+        model_data.train()
 
-    classification_metric_dict = dict()
+    temp_data_dic = dict()
 
-    for i,data in enumerate(tqdm(data_loader)):
-        if args.use_visit:
-            names = data[-1]
-            data = data[:-1]
-            if args.gpu:
-                data = [ Variable(x.cuda()) for x in data ]
-            visits, values, mask, master, labels, times, trends = data
-            if i == 0:
-                print('input size', visits.size()) 
-                print('Time size', times.size()) 
-                print('demo size', master.size()) 
-            output_list = model(visits, master, mask, times, phase, values, trends)
+    for item_data in tqdm(data_loader):
+        if arg_list.use_visit:
+            item_data = item_data[:-1]
+            if arg_list.gpu:
+                item_data = [Variable(x.cuda()) for x in item_data]
+            item_visits, item_values, item_mask, item_master, item_labels, item_times, item_trends = item_data
+            output_list = model_data(
+                item_visits, item_master, item_mask, item_times, phase_type, item_values, item_trends)
             output = output_list[0]
 
-        classification_loss_output = loss(output, labels, args.hard_mining)
+        classification_loss_output = loss_data(
+            output, item_labels, arg_list.hard_mining)
         loss_gradient = classification_loss_output[0]
-        function.compute_metric(output, labels, time, classification_loss_output, classification_metric_dict, phase)
+        function.compute_metric_func(
+            output, item_labels, time, classification_loss_output, temp_data_dic, phase_type)
 
-        if phase == 'train':
+        if phase_type == 'train':
             optimizer.zero_grad()
             loss_gradient.backward()
             optimizer.step()
 
-    print('\nEpoch: {:d} \t Phase: {:s} \n'.format(epoch, phase))
-    metric = function.print_metric('classification', classification_metric_dict, phase)
-    if phase == 'val':
-        if metric > p_dict['best_metric'][0]:
-            p_dict['best_metric'] = [metric, epoch]
-            function.save_model(p_dict)
+    print('\nEpoch: {:d} \t phase: {:s} \n'.format(epoch_data, phase_type))
+    metric = function.print_metric_func('classification', temp_data_dic, phase_type)
+    if arg_list.phase != 'train':
+        print('metric = ', metric)
+    if phase_type == 'val':
+        if metric > data_dict['best_metric'][0]:
+            data_dict['best_metric'] = [metric, epoch_data]
+            function.save_models_func(data_dict)
 
-        print('valid: auc: {:3.4f}\t epoch: {:d}\n'.format(metric, epoch))
-        print('\t\t\t valid: best_auc: {:3.4f}\t epoch: {:d}\n'.format(p_dict['best_metric'][0], p_dict['best_metric'][1]))  
+        print('valid: metric: {:3.4f}\t epoch: {:d}\n'.format(
+            metric, epoch_data))
+        print('\t\t\t valid: best_metric: {:3.4f}\t epoch: {:d}\n'.format(
+            data_dict['best_metric'][0], data_dict['best_metric'][1]))
     else:
-        print('train: accuracy: {:3.4f}\t epoch: {:d}\n'.format(metric, epoch))
-
+        print('train: metric: {:3.4f}\t epoch: {:d}\n'.format(
+            metric, epoch_data))
 
 
 def main():
-    p_dict = dict() # All the parameters
-    p_dict['args'] = args
-    args.split_nn =  3 * 5
-    args.vocab_size = args.split_nn * 145 + 2
-    print ('vocab_size', args.vocab_size)
+    data_dict = dict()
+    data_dict['args'] = arg_list
+    arg_list.split_nn = 3 * 5
+    arg_list.vocab_size = arg_list.split_nn * 145 + 2
+    if arg_list.task == 'mortality':
+        pat_time_record_data = py_op.myreadjson(os.path.join(
+            arg_list.result_dir, 'patient_time_record_dict.json'))
+        pat_master_data = py_op.myreadjson(os.path.join(
+            arg_list.result_dir, 'patient_master_dict.json'))
+        pat_label_data = py_op.myreadjson(os.path.join(
+            arg_list.result_dir, 'patient_label_dict.json'))
 
-    ### load data
-    print ('read data ...')
-    if args.task == 'mortality':
-
-        patient_time_record_dict = py_op.myreadjson(os.path.join(args.result_dir, 'patient_time_record_dict.json'))
-        patient_master_dict = py_op.myreadjson(os.path.join(args.result_dir, 'patient_master_dict.json'))
-        patient_label_dict = py_op.myreadjson(os.path.join(args.result_dir, 'patient_label_dict.json'))
-
-    
-        if os.path.exists(os.path.join(args.result_dir, 'train.json')):
-            patient_train = list(json.load(open(os.path.join(args.result_dir, 'train.json'))))
-            patient_valid = list(json.load(open(os.path.join(args.result_dir, 'valid.json')))) 
-            patient_test = list(json.load(open(os.path.join(args.result_dir, 'test.json')))) 
+        if os.path.exists(os.path.join(arg_list.result_dir, 'train.json')):
+            pat_train = list(
+                json.load(open(os.path.join(arg_list.result_dir, 'train.json'))))
+            pat_valid = list(
+                json.load(open(os.path.join(arg_list.result_dir, 'valid.json'))))
+            pat_test = list(
+                json.load(open(os.path.join(arg_list.result_dir, 'test.json'))))
         else:
-            patients = sorted(set(patient_label_dict.keys()) & set(patient_time_record_dict) & set(patient_master_dict))
-            print(len(patient_master_dict), len(patient_label_dict), len(patient_time_record_dict))
-            print('There are {:d} patients.'.format(len(patients)))
-            n_train = int(0.7 * len(patients))
-            n_valid = int(0.2 * len(patients))
-            patient_train = patients[:n_train]
-            patient_valid = patients[n_train:n_train+n_valid]
-            patient_test  = patients[n_train+n_valid:]
+            pats = sorted(set(pat_label_data.keys()) & set(
+                pat_time_record_data) & set(pat_master_data))
+            num_train = int(0.7 * len(pats))
+            num_valid = int(0.2 * len(pats))
+            pat_train = pats[:num_train]
+            pat_valid = pats[num_train:num_train+num_valid]
+            pat_test = pats[num_train+num_valid:]
 
-        args.master_size = len(patient_master_dict[patients[0]])
-    # elif args.task == 'sepsis':
-    #     patient_time_record_dict = py_op.myreadjson(os.path.join(args.result_dir, 'sepsis_time_record_dict.json'))
-    #     patient_master_dict = py_op.myreadjson(os.path.join(args.result_dir, 'patient_master_dict.json'))
-    #     patient_label_dict = py_op.myreadjson(os.path.join(args.result_dir, 'sepsis_label_dict.json'))
-    #     sepsis_split = py_op.myreadjson(os.path.join(args.result_dir, 'sepsis_split.json'))
-    #     print(sepsis_split.keys())
-    #     sepsis_split = sepsis_split[str(- args.last_time)]
-    
-    #     patient_train = sepsis_split['train']
-    #     patient_valid = sepsis_split['valid']
-    #     print('train: {:d}'.format(len(patient_train)))
-    #     print('valid: {:d}'.format(len(patient_valid)))
+        arg_list.master_size = len(pat_master_data[pats[0]])
 
+    train_load, val_load, test_load = pat_set_func(pat_time_record_data, pat_master_data, pat_label_data, pat_train, pat_valid, pat_test)
 
-    print ('data loading ...')
-    train_dataset  = dataloader.DataSet(
-                patient_train, 
-                patient_time_record_dict,
-                patient_label_dict,
-                patient_master_dict, 
-                args=args,
-                phase='train')
-    train_loader = DataLoader(
-                dataset=train_dataset, 
-                batch_size=args.batch_size,
-                shuffle=True, 
-                num_workers=8, 
-                pin_memory=True)
-    val_dataset  = dataloader.DataSet(
-                patient_valid, 
-                patient_time_record_dict,
-                patient_label_dict,
-                patient_master_dict, 
-                args=args,
-                phase='val')
-    val_loader = DataLoader(
-                dataset=val_dataset, 
-                batch_size=args.batch_size,
-                shuffle=True, 
-                num_workers=8, 
-                pin_memory=True)
-    test_dataset  = dataloader.DataSet(
-                patient_test, 
-                patient_time_record_dict,
-                patient_label_dict,
-                patient_master_dict, 
-                args=args,
-                phase='val')
-    test_loader = DataLoader(
-                dataset=test_dataset, 
-                batch_size=args.batch_size,
-                shuffle=True, 
-                num_workers=8, 
-                pin_memory=True)
-
-    p_dict['train_loader'] = train_loader
-    if args.phase == 'train':
-        p_dict['val_loader'] = val_loader
+    data_dict['train_loader'] = train_load
+    if arg_list.phase != 'train':
+        data_dict['val_loader'] = test_load
     else:
-        p_dict['val_loader'] = test_loader
-
-
+        data_dict['val_loader'] = val_load
 
     cudnn.benchmark = True
-    net = attention.Attention(args)
-    if args.gpu:
+    net = attention.MyAttention(arg_list)
+    if arg_list.gpu:
         net = net.cuda()
-        p_dict['loss'] = loss.Loss().cuda()
+        data_dict['loss'] = loss.Loss().cuda()
     else:
-        p_dict['loss'] = loss.Loss()
+        data_dict['loss'] = loss.Loss()
 
     parameters = []
-    for p in net.parameters():
-        parameters.append(p)
-    optimizer = torch.optim.Adam(parameters, lr=args.lr)
-    p_dict['optimizer'] = optimizer
-    p_dict['model'] = net
-    start_epoch = 0
-    p_dict['epoch'] = 0
-    p_dict['best_metric'] = [0, 0]
+    for p_item in net.parameters():
+        parameters.append(p_item)
+    optimizer = torch.optim.Adam(parameters, lr=arg_list.lr)
+    data_dict['optimizer'] = optimizer
+    data_dict['model'] = net
 
+    data_dict['epoch'] = 0
+    data_dict['best_metric'] = [0, 0]
 
-    ### resume pretrained model
-    if os.path.exists(args.resume):
-        print ('resume from model ' + args.resume)
-        function.load_model(p_dict, args.resume)
-        print ('best_metric', p_dict['best_metric'])
+    if os.path.exists(arg_list.resume):
+        function.load_models_func(data_dict, arg_list.resume)
 
-
-    if args.phase == 'train':
-
-        best_f1score = 0
-        for epoch in range(p_dict['epoch'] + 1, args.epochs):
-            p_dict['epoch'] = epoch
+    if arg_list.phase != 'train':
+        train_eval_func(data_dict, 'test')
+    else:
+        for epoch in range(data_dict['epoch'] + 1, arg_list.epochs):
+            data_dict['epoch'] = epoch
             for param_group in optimizer.param_groups:
-                param_group['lr'] = args.lr
-            train_eval(p_dict, 'train')
-            train_eval(p_dict, 'val')
-        log_info = '# task : {:s}; model: {:s} ; last_time: {:d} ; auc: {:3.4f} \n'.format(args.task, args.model, args.last_time, p_dict['best_metric'][0])
+                param_group['lr'] = arg_list.lr
+            train_eval_func(data_dict, 'train')
+            train_eval_func(data_dict, 'val')
+        log_info = '# task : {:s}; model: {:s} ; last_time: {:d} ; auc: {:3.4f} \n'.format(
+            arg_list.task, arg_list.model, arg_list.last_time, data_dict['best_metric'][0])
         with open('../result/log.txt', 'a') as f:
             f.write(log_info)
-    else:
-        train_eval(p_dict, 'test')
+
+def pat_set_func(pat_time_record_data, pat_master_data, pat_label_data, pat_train, pat_valid, pat_test):
+    train_data_set = dataloader.MyDataSet(
+        pat_train,
+        pat_time_record_data,
+        pat_label_data,
+        pat_master_data,
+        arg_list=arg_list,
+        phase='train')
+    train_load = DataLoader(
+        dataset=train_data_set,
+        batch_size=arg_list.batch_size,
+        shuffle=True,
+        num_workers=8,
+        pin_memory=True)
+    val_data_set = dataloader.MyDataSet(
+        pat_valid,
+        pat_time_record_data,
+        pat_label_data,
+        pat_master_data,
+        arg_list=arg_list,
+        phase='val')
+    val_load = DataLoader(
+        dataset=val_data_set,
+        batch_size=arg_list.batch_size,
+        shuffle=True,
+        num_workers=8,
+        pin_memory=True)
+    test_data_set = dataloader.MyDataSet(
+        pat_test,
+        pat_time_record_data,
+        pat_label_data,
+        pat_master_data,
+        arg_list=arg_list,
+        phase='val')
+    test_load = DataLoader(
+        dataset=test_data_set,
+        batch_size=arg_list.batch_size,
+        shuffle=True,
+        num_workers=8,
+        pin_memory=True)
+        
+    return train_load,val_load,test_load
 
 
 if __name__ == '__main__':

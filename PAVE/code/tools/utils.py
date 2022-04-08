@@ -1,8 +1,8 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2017 www.drcubic.com, Inc. All Rights Reserved
-#
+
+
+
+
+
 """
 File: utils.py
 Author: shileicao(shileicao@stu.xjtu.edu.cn)
@@ -59,8 +59,8 @@ def setgpu(gpuinput):
 def error_mask_stats(labels, filenames):
     error_f = []
     for i, f in enumerate(filenames):
-#         if not np.all(labels[i] > 0):
-#             error_f.append(f)
+
+
         for bbox_i in range(labels[i].shape[0]):
             imgs = np.load(f)
             if not np.all(
@@ -83,9 +83,9 @@ class Logger(object):
         self.log.write(message)
 
     def flush(self):
-        #this flush method is needed for python 3 compatibility.
-        #this handles the flush command by doing nothing.
-        #you might want to specify some extra behavior here.
+        
+        
+        
         pass
 
 

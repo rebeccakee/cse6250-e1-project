@@ -1,4 +1,4 @@
-# coding=utf8
+
 import os
 import numpy as np
 from sklearn import metrics
@@ -55,6 +55,7 @@ def stati_class_number_true_flase_bce(labels, preds):
     return d
 
 def measures(d_list):
+    
     d_all = dict()
     for d in d_list:
         for cls in d.keys():
@@ -111,9 +112,16 @@ def psnr_pred(stain_vis=20, end= 10000):
             clean = np.array(Image.open(clean).resize((250,250))).astype(np.float32)
             stain = np.array(Image.open(stain).resize((250,250))).astype(np.float32)
 
+            
+            
+            
+
+            
+            
+
             if end < 1000:
                 diff = np.abs(clean - stain)
-                # stain[diff>stain_vis] = pred[diff>stain_vis]
+                
                 stain[diff>stain_vis] = clean[diff>stain_vis]
 
             psnr_pred  = psnr(clean, pred)
@@ -133,6 +141,7 @@ def psnr_pred(stain_vis=20, end= 10000):
         f.write(',')
         f.write(str(psnr_pred/psnr_stain - 1))
         f.write('\n')
+    
     psnr_list = np.array(psnr_list)
     psnr_mean = ((psnr_list[:,1] - psnr_list[:,0]) / psnr_list[:,0]).mean()
     if end > 1000:
@@ -151,9 +160,13 @@ def main():
         if p > pmax[1]:
             pmax = [vis, p]
     print '...'
+    
     print pmax
+    
 
 
 if __name__ == '__main__':
     psnr_pred(4000)
-
+    
+    
+    
