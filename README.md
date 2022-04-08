@@ -1,8 +1,16 @@
 # CSE6250 Big Data for Health - Group Project
 
-This repo contains our source code for reproducing the findings in  [Kamal et al., 2020](https://bmcmedinformdecismak.biomedcentral.com/articles/10.1186/s12911-020-01331-7).
-
 Authors: Rebecca Kee, Na Wu
+
+This repo contains our source code for reproducing the Pattern Attention with Value Embedding (PAVE) model and the findings described in [Kamal et al., 2020](https://bmcmedinformdecismak.biomedcentral.com/articles/10.1186/s12911-020-01331-7).
+
+## Repo contents
+* The `PAVE/` subfolder contains all the necessary scripts for training and evaluating the PAVE model. 
+* The `process_mimic.py` script prepares the raw MIMIC-III data so that it is suitable for loading into the PAVE model. 
+* The `baseline.py` script implements the training of 3 baseline models for comparing the performance of the PAVE model to. The baseline methods include Logistic Regression, Random Forest, and Support Vector Machine (SVM). It also further processes the MIMIC-III data so that is it feasible for fitting the baseline models.
+
+## Required data 
+MIMIC-III data is required to run our source code. You may apply for access to MIMIC-III data following the instructions [here](https://mimic.mit.edu/docs/gettingstarted/). 
 
 ## Instructions to run code
 
