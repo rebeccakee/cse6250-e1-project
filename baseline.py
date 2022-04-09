@@ -49,8 +49,9 @@ def logistic_regression(X_train, y_train, X_test):
     print("Logistic regression - Best cv auc:", cv.best_score_)
     print("Logistic regression - Fitting best model...")
     best_model = LogisticRegression(random_state=args.seed, solver=cv.best_params_['solver']).fit(X_train, y_train)
+    print("Logistic regression - Predicting on test set...")
     Y_pred = best_model.predict(X_test)
-    print("Logistic regression fitting - Done!")
+    print("Logistic regression - Performance on test set:")
     return Y_pred
 
 def svm(X_train, y_train, X_test):
@@ -62,8 +63,9 @@ def svm(X_train, y_train, X_test):
     print("SVM - Best cv auc:", cv.best_score_)
     print("SVM - Fitting best model...")
     best_model = SVC(random_state=args.seed, kernel=cv.best_params_['kernel']).fit(X_train, y_train)
+    print("SVM - Predicting on test set...")
     Y_pred = best_model.predict(X_test)
-    print("SVM fitting - Done!")
+    print("SVM - Performance on test set:")
     return Y_pred
 
 def random_forest(X_train, y_train, X_test):
@@ -75,8 +77,9 @@ def random_forest(X_train, y_train, X_test):
     print("RF - Best cv auc:", cv.best_score_)
     print("RF - Fitting best model...")
     best_model = RandomForestClassifier(random_state=args.seed, n_estimators=1000, max_depth=cv.best_params_['max_depth'], max_features=cv.best_params_['max_features']).fit(X_train, y_train)
+    print("RF - Predicting on test set...")
     Y_pred = best_model.predict(X_test)
-    print("RF fitting - Done!")
+    print("RF - Performance on test set:")
     return Y_pred
 
 def classification_metrics(Y_pred, Y_true):
