@@ -4,8 +4,8 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import LinearSVC
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import *
 
 args = parse.args
@@ -43,27 +43,36 @@ def prep_data(data, demo, label):
 def logistic_regression(X_train, y_train, X_test):
     grid = {"solver":['lbfgs','newton-cg','liblinear','sag','saga']}
     model = LogisticRegression(random_state=args.seed, max_iter=1000)
-    logit_cv = GridSearchCV(model, grid, scoring='roc_auc', cv=10).fit(X_train, y_train)
-    print("Logistic regression - Best parameters:", logit_cv.best_params_)
-    print("Logistic regression - Best cv auc:",logit_cv.best_score_)
-    print("Fitting best logistic regression model...")
-    best_logit = LogisticRegression(random_state=args.seed, solver=logit_cv.best_params_['solver']).fit(X_train, y_train)
-    Y_pred = best_logit.predict(X_test)
+    print("Logistic regression - Performing 10-fold CV...")
+    cv = GridSearchCV(model, grid, scoring='roc_auc', cv=10).fit(X_train, y_train)
+    print("Logistic regression - Best parameters:", cv.best_params_)
+    print("Logistic regression - Best cv auc:", cv.best_score_)
+    print("Logistic regression - Fitting best model...")
+    best_model = LogisticRegression(random_state=args.seed, solver=cv.best_params_['solver']).fit(X_train, y_train)
+    Y_pred = best_model.predict(X_test)
     print("Logistic regression fitting - Done!")
     return Y_pred
 
-# def svm(X_train, Y_train, X_test):
-#     svm_clf = LinearSVC(random_state=args.seed).fit(X_train, Y_train)
-#     Y_pred = svm_clf.predict(X_test)
-#     return Y_pred
-
-# X_train, X_valid, X_test, y_train, y_valid, y_test = prep_data(data, demo, label)
-# Y_pred = logistic_regression(X_train, y_train, X_test)
+def svm(X_train, y_train, X_test):
+    grid = {"kernel":['poly','linear','rbf','sigmoid']}
+    model = SVC(random_state=args.seed)
+    print("SVM - Performing 10-fold CV...")
+    cv = GridSearchCV(model, grid, scoring='roc_auc', cv=10).fit(X_train, y_train)
+    print("SVM - Best parameters:", cv.best_params_)
+    print("SVM - Best cv auc:", cv.best_score_)
+    print("SVM - Fitting best model...")
+    best_model = SVC(random_state=args.seed, kernel=cv.best_params_['kernel']).fit(X_train, y_train)
+    Y_pred = best_model.predict(X_test)
+    print("SVM fitting - Done!")
+    return Y_pred
 
 # def random_forest(X_train, Y_train, X_test):
 #     tree_clf = DecisionTreeClassifier(random_state=args.seed, max_depth=5).fit(X_train, Y_train)
 #     Y_pred = tree_clf.predict(X_test)
 #     return Y_pred
+
+# X_train, X_valid, X_test, y_train, y_valid, y_test = prep_data(data, demo, label)
+# Y_pred = random_forest(X_train, y_train, X_test)
 
 def classification_metrics(Y_pred, Y_true):
     accuracy = float(accuracy_score(Y_true, Y_pred))
@@ -88,8 +97,8 @@ def display_metrics(classifierName,Y_pred,Y_true):
 # def main():
     # prep_data(data, demo, label)
     # display_metrics("Logistic Regression", logistic_regression(X_train, y_train, X_test), y_test)
-	# display_metrics("SVM",svm_pred(X_train,Y_train,X_test),Y_test)
-	# display_metrics("Random Forest",decisionTree_pred(X_train,Y_train,X_test),Y_test)
+	# display_metrics("SVM", svm(X_train,y_train,X_test),y_test)
+	# display_metrics("Random Forest", random_forest(X_train,y_train,X_test),y_test)
 
 # if __name__ == '__main__':
 #     main()
