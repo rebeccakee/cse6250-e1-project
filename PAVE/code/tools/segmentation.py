@@ -11,13 +11,12 @@ from skimage import measure
 
 
 def watershed(image, label=None):
-    denoised = filters.rank.median(image, morphology.disk(2)) #过滤噪声
-    #将梯度值低于10的作为开始标记点
+    denoised = filters.rank.median(image, morphology.disk(2)) 
     markers = filters.rank.gradient(denoised, morphology.disk(5)) < 10
     markers = ndi.label(markers)[0]
 
-    gradient = filters.rank.gradient(denoised, morphology.disk(2)) #计算梯度
-    labels =morphology.watershed(gradient, markers, mask=image) #基于梯度的分水岭算法
+    gradient = filters.rank.gradient(denoised, morphology.disk(2)) 
+    labels =morphology.watershed(gradient, markers, mask=image) 
 
     fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(6, 6))
     axes = axes.ravel()
@@ -25,11 +24,9 @@ def watershed(image, label=None):
 
     ax0.imshow(image, cmap=plt.cm.gray, interpolation='nearest')
     ax0.set_title("Original")
-    # ax1.imshow(gradient, cmap=plt.cm.spectral, interpolation='nearest')
     ax1.imshow(gradient, cmap=plt.cm.gray, interpolation='nearest')
     ax1.set_title("Gradient")
     if label is not None:
-        # ax2.imshow(markers, cmap=plt.cm.spectral, interpolation='nearest')
         ax2.imshow(label, cmap=plt.cm.gray, interpolation='nearest')
     else:
         ax2.imshow(markers, cmap=plt.cm.spectral, interpolation='nearest')
@@ -67,11 +64,6 @@ def plot_4(image, gradient,label,segmentation, save_path=None):
         plt.show()
 
 def fill(image):
-    '''
-    填充图片内部空白
-    临时写的函数
-    建议后期替换
-    '''
     label_img = measure.label(image, background=1)
     props = measure.regionprops(label_img)
     max_area = np.array([p.area for p in props]).max()
@@ -88,8 +80,7 @@ def my_watershed(image, label=None, min_gray=480, max_gray=708, min_gradient=5, 
     image[image< 10]  = 0
     image = image * 5
 
-    denoised = filters.rank.median(image, morphology.disk(2)) #过滤噪声
-    #将梯度值低于10的作为开始标记点
+    denoised = filters.rank.median(image, morphology.disk(2)) 
     markers = filters.rank.gradient(denoised, morphology.disk(5)) < 10
     markers = ndi.label(markers)[0]
 
@@ -108,7 +99,6 @@ def my_watershed(image, label=None, min_gray=480, max_gray=708, min_gradient=5, 
             if v < 200:
                 pred[prop.coords[:,0],prop.coords[:,1]] = 1
 
-    # 填充边缘内部空白
     pred = fill(pred)
 
     if show:
@@ -141,8 +131,6 @@ def main():
                 segmentation(image_npy,label_npy, os.path.join(save_dir,label_npy.strip('/').replace('/','.').replace('npy','jpg')))
 
 if __name__ == '__main__':
-    # image =color.rgb2gray(data.camera())
-    # watershed(image)
     main()
     image_npy = '/home/yin/all/PVL_DATA/preprocessed/2D/JD_chen_xi/23.npy'
     image_npy = '/home/yin/all/PVL_DATA/preprocessed/2D/JD_chen_xi/14.npy' 

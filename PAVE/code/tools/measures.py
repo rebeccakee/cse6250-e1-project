@@ -55,7 +55,6 @@ def stati_class_number_true_flase_bce(labels, preds):
     return d
 
 def measures(d_list):
-    # 合并每一个预测的结果
     d_all = dict()
     for d in d_list:
         for cls in d.keys():
@@ -112,13 +111,6 @@ def psnr_pred(stain_vis=20, end= 10000):
             clean = np.array(Image.open(clean).resize((250,250))).astype(np.float32)
             stain = np.array(Image.open(stain).resize((250,250))).astype(np.float32)
 
-            # diff = np.abs(stain - pred)
-            # vis = 20
-            # pred[diff<vis] = stain[diff<vis]
-
-            # gray_vis = 240
-            # pred[stain>gray_vis] = stain[stain>gray_vis]
-
             if end < 1000:
                 diff = np.abs(clean - stain)
                 # stain[diff>stain_vis] = pred[diff>stain_vis]
@@ -141,7 +133,6 @@ def psnr_pred(stain_vis=20, end= 10000):
         f.write(',')
         f.write(str(psnr_pred/psnr_stain - 1))
         f.write('\n')
-    # print '预测',np.mean(psnr_list)
     psnr_list = np.array(psnr_list)
     psnr_mean = ((psnr_list[:,1] - psnr_list[:,0]) / psnr_list[:,0]).mean()
     if end > 1000:
@@ -160,13 +151,9 @@ def main():
         if p > pmax[1]:
             pmax = [vis, p]
     print '...'
-    # print 256,psnr_pred(256)
     print pmax
-    # print 10 * np.log10(255*255/metrics.mean_squared_error([3],[9]))
 
 
 if __name__ == '__main__':
     psnr_pred(4000)
-    # main()
-    # for v in range(1,10):
-    #     print v, 10 * np.log10(255*255/v/v)
+

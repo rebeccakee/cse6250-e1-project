@@ -16,7 +16,6 @@ import torch
 # file
 import loaddata
 from tools import parse
-# from loaddata import data_function
 
 args = parse.args
 
@@ -43,10 +42,7 @@ def save_model(p_dict, name='best.ckpt', folder='../data/models/'):
 def load_model(p_dict, model_file):
     all_dict = torch.load(model_file)
     p_dict['epoch'] = all_dict['epoch']
-    # p_dict['args'] = all_dict['args']
     p_dict['best_metric'] = all_dict['best_metric']
-    # for k,v in all_dict['state_dict'].items():
-    #     p_dict['model_dict'][k].load_state_dict(all_dict['state_dict'][k])
     p_dict['model'].load_state_dict(all_dict['state_dict'])
 
 
@@ -56,13 +52,10 @@ def save_segmentation_results(images, segmentations, folder='../data/middle_segm
     if not os.path.exists(folder):
         os.mkdir(folder)
 
-    # images = images.data.cpu().numpy()
-    # segmentations = segmentations.data.cpu().numpy()
     images = (images * 128) + 127
     segmentations[segmentations>0] = 255
     segmentations[segmentations<0] = 0
 
-    # print(images.shape, segmentations.shape)
     for ii, image, seg in zip(range(len(images)), images, segmentations):
         image = data_function.numpy_to_image(image)
         new_seg = np.zeros([3, seg.shape[1] * stride, seg.shape[2] * stride])
@@ -92,20 +85,16 @@ def save_middle_results(data, folder = '../data/middle_images'):
         name = name.split('/')[-1]
         image = data_function.numpy_to_image(image)
         new_seg = np.zeros([3, seg.shape[1] * stride, seg.shape[2] * stride])
-        # print(seg[0].max(),seg[0].min())
         for i in range(seg.shape[1]):
             for j in range(seg.shape[2]):
                 for k in range(3):
                     new_seg[k, i*stride:(i+1)*stride, j*stride:(j+1)*stride] = seg[0,i,j]
         seg = new_seg
         seg = data_function.numpy_to_image(seg)
-        # image.save(os.path.join(folder, name))
-        # seg.save(os.path.join(folder, name.replace('image.png', 'seg.png')))
         image.save(os.path.join(folder, str(ii) + '_image.png'))
         seg.save(os.path.join(folder, str(ii) + '_seg.png'))
 
         for ib,bimg in enumerate(bbox_image):
-            # print(bimg.max(), bimg.min(), bimg.dtype)
             bimg = data_function.numpy_to_image(bimg)
             bimg.save(os.path.join(folder, str(ii)+'_'+ str(ib) + '_bbox.png'))
 
@@ -114,22 +103,15 @@ def save_detection_results(names, images, detect_character_output, folder='../da
 
     if not os.path.exists(folder):
         os.mkdir(folder)
-    # images = images.data.cpu().numpy()                                      # [bs, 3, w, h]
     images = (images * 128) + 127
-    # detect_character_output = detect_character_output.data.cpu().numpy()    # [bs, w, h, n_anchors, 5+class]
 
     for i, name, image, bboxes in zip(range(len(names)), names, images, detect_character_output):
         name = name.split('/')[-1]
 
-        ### 保存原图
-        # data_function.numpy_to_image(image).save(os.path.join(folder, name))
         data_function.numpy_to_image(image).save(os.path.join(folder, str(i) + '_image.png'))
 
         detected_bbox = detect_function.nms(bboxes)
-        # print([b[-1] for b in detected_bbox])
-        # print(len(detected_bbox))
         image = data_function.add_bbox_to_image(image, detected_bbox)
-        # image.save(os.path.join(folder, name.replace('.png', '_bbox.png')))
         image.save(os.path.join(folder, str(i) + '_bbox.png'))
 
 
@@ -143,7 +125,6 @@ def compute_segmentation_metric(outputs, labels, loss_outputs, metric_dict):
     metric_dict['metric'] = metric_dict.get('metric', []) + [loss_outputs]
 
 def compute_metric(outputs, labels, time, loss_outputs,metric_dict, phase='train'):
-    # loss_output_list, f1score_list, recall_list, precision_list):
     if phase != 'test':
         preds = outputs.data.cpu().numpy()
         labels = labels.data.cpu().numpy()
@@ -153,10 +134,6 @@ def compute_metric(outputs, labels, time, loss_outputs,metric_dict, phase='train
     preds = preds.reshape(-1)
     labels = labels.reshape(-1)
 
-    # if time is not None:
-    #     time = time.reshape(-1)
-    #     assert preds.shape == time.shape
-    #     time = time[labels>-0.5]
     assert preds.shape == labels.shape
 
     preds = preds[labels>-0.5]
@@ -182,13 +159,10 @@ def compute_metric(outputs, labels, time, loss_outputs,metric_dict, phase='train
             loss.append(x)
         else:
             loss.append(x.data.cpu().numpy())
-    # loss = [[x.data.cpu().numpy() for x in loss_outputs]]
     metric_dict['loss'] = metric_dict.get('loss', []) +  [loss]
     if phase != 'train':
         metric_dict['preds'] = metric_dict.get('preds', []) + list(preds)
         metric_dict['labels'] = metric_dict.get('labels', []) + list(label)
-        # if time is not None:
-        #     metric_dict['times'] = metric_dict.get('times', []) + list(time)
 
 def compute_metric_multi_classification(outputs, labels, loss_outputs, metric_dict):
     preds = outputs.data.cpu().numpy() > 0
@@ -229,7 +203,7 @@ def print_metric(first_line, metric_dict, phase='train'):
         fpr, tpr, thr = metrics.roc_curve(metric_dict['labels'], metric_dict['preds'])
         return metrics.auc(fpr, tpr)
     else:
-        return f1score
+        return accuracy
 
 def load_all():
     fo = '../data/models'
@@ -239,7 +213,5 @@ def load_all():
             print()
             pre = fi[:5]
         x = torch.load(os.path.join(fo, fi))
-        # print x['epoch'], fi
         print(x['best_metric'], fi) 
-# load_all()
 

@@ -77,8 +77,29 @@ def gen_feature_order_dict():
         feature_value_order_dict[col] = value_order_dict
     py_op.mywritejson(os.path.join(args.result_dir, 'feature_value_order_dict.json'), feature_value_order_dict)
 
+def gen_normal_range_order():
+    feature_value_order_dict = py_op.myreadjson(os.path.join(args.result_dir, 'feature_value_order_dict.json'))
+    index_vital_list = py_op.myreadjson(os.path.join(args.result_dir, 'index_feature_list.json'))
+    vital_normal_range_dict  = py_op.myreadjson(os.path.join(args.file_dir, 'vital_normal_range_dict.json'))
+    feature_normal_range_order_dict = { }
+    for feature, d in feature_value_order_dict.items():
+        if 'time' in feature:
+            continue
+        normal_range = vital_normal_range_dict[feature]
+        values = sorted(d.keys(), key = lambda s:float(s))
+        feature_normal_range_order_dict[feature] = []
+        for v in values:
+            if float(v) > normal_range[0] and len(feature_normal_range_order_dict[feature]) == 0:
+                feature_normal_range_order_dict[feature].append(d[v])
+            if float(v) > normal_range[1] and len(feature_normal_range_order_dict[feature]) == 1:
+                feature_normal_range_order_dict[feature].append(d[v])
+                break
+    print(feature_normal_range_order_dict) 
+    py_op.mywritejson(os.path.join(args.result_dir, 'feature_normal_range_order_dict.json'), feature_normal_range_order_dict)
+
 def main():
     gen_feature_order_dict()
+    gen_normal_range_order()
     print("gen_feature_order: Done!")
 
 
