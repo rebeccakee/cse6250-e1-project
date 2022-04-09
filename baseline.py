@@ -66,13 +66,18 @@ def svm(X_train, y_train, X_test):
     print("SVM fitting - Done!")
     return Y_pred
 
-# def random_forest(X_train, Y_train, X_test):
-#     tree_clf = DecisionTreeClassifier(random_state=args.seed, max_depth=5).fit(X_train, Y_train)
-#     Y_pred = tree_clf.predict(X_test)
-#     return Y_pred
-
-# X_train, X_valid, X_test, y_train, y_valid, y_test = prep_data(data, demo, label)
-# Y_pred = random_forest(X_train, y_train, X_test)
+def random_forest(X_train, y_train, X_test):
+    grid = {"max_depth":[3, 5, 7, 9], "max_features":['sqrt','log2']}
+    model = RandomForestClassifier(random_state=args.seed, n_estimators=1000)
+    print("RF - Performing 10-fold CV...")
+    cv = GridSearchCV(model, grid, scoring='roc_auc', cv=10).fit(X_train, y_train)
+    print("RF - Best parameters:", cv.best_params_)
+    print("RF - Best cv auc:", cv.best_score_)
+    print("RF - Fitting best model...")
+    best_model = RandomForestClassifier(random_state=args.seed, n_estimators=1000, max_depth=cv.best_params_['max_depth'], max_features=cv.best_params_['max_features']).fit(X_train, y_train)
+    Y_pred = best_model.predict(X_test)
+    print("RF fitting - Done!")
+    return Y_pred
 
 def classification_metrics(Y_pred, Y_true):
     accuracy = float(accuracy_score(Y_true, Y_pred))
@@ -94,11 +99,11 @@ def display_metrics(classifierName,Y_pred,Y_true):
 	print("______________________________________________")
 	print("")
 
-# def main():
-    # prep_data(data, demo, label)
-    # display_metrics("Logistic Regression", logistic_regression(X_train, y_train, X_test), y_test)
-	# display_metrics("SVM", svm(X_train,y_train,X_test),y_test)
-	# display_metrics("Random Forest", random_forest(X_train,y_train,X_test),y_test)
+def main():
+    X_train, X_valid, X_test, y_train, y_valid, y_test = prep_data(data, demo, label)
+    display_metrics("Logistic Regression", logistic_regression(X_train, y_train, X_test), y_test)
+    display_metrics("SVM", svm(X_train,y_train,X_test),y_test)
+    display_metrics("Random Forest", random_forest(X_train,y_train,X_test),y_test)
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()
