@@ -2,21 +2,41 @@ import os
 from PAVE.code.tools import parse, py_op
 import pandas as pd
 import numpy as np
+import time
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import *
 
+
 args = parse.args
 filepath = "PAVE/data/"
+print("Loading data...")
 data = pd.read_csv(filepath + 'data.csv')
 demo = pd.read_csv(filepath + 'demo.csv')
 label = pd.read_csv(filepath + 'label.csv')
+patient_time_dict = py_op.myreadjson(os.path.join('PAVE/code/', args.result_dir, 'patient_time_dict.json'))
+
+# Time conversion func from gen_vital_feature.py
+def time_to_min(t):
+    t = t.replace('"', '')
+    t = time.mktime(time.strptime(t,'%Y-%m-%d %H:%M:%S'))
+    t = t / 60
+    return int(t)
 
 def prep_data(data, demo, label):
+    print("Preparing data...")
+    # Filter events depending on the prediction window
+    data_inwindow = data.copy()
+    data_inwindow['time'] = data_inwindow.apply(lambda df: time_to_min(df.time)-patient_time_dict[str(df.id)]-1, axis=1)
+    data_inwindow['max_time'] = data_inwindow.groupby('id')['time'].transform('max')
+    data_inwindow = data_inwindow[(data_inwindow['time']<= -args.time_range)] 
+    data_inwindow = data_inwindow[(data_inwindow['time']-data_inwindow['max_time'] <= args.last_time*60)]
+    data_inwindow = data_inwindow.drop(columns=['max_time'])
+
     # Extract min & max of each variable, merge with patient demo
-    minmax_df = data.loc[:,data.columns!='time'].groupby('id').agg(['min', 'max'])
+    minmax_df = data_inwindow.loc[:,data_inwindow.columns!='time'].groupby('id').agg(['min', 'max'])
     minmax_df.columns = ["_".join(col).rstrip('_') for col in minmax_df.columns.to_flat_index()]
     X_df = demo.merge(minmax_df, on='id').dropna() # Drop rows with any NAs
     X_df['gender'] = X_df['gender'].replace({'M': 1, 'F': 0}) # All columns need to be numeric for baseline methods
@@ -38,6 +58,7 @@ def prep_data(data, demo, label):
     y_train = label[np.in1d(label['id'].values, X_train['id'])].label
     y_valid = label[np.in1d(label['id'].values, X_valid['id'])].label
     y_test = label[np.in1d(label['id'].values, X_test['id'])].label
+    print("Data preparation done!")
     return X_train, X_valid, X_test, y_train, y_valid, y_test
 
 def logistic_regression(X_train, y_train, X_test):
