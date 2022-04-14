@@ -58,6 +58,8 @@ python gen_label.py
 
 ### 3. PAVE model training
 
+To change the prediction window, change the `last-time` parameter in `parse.py`. The default is set to -10, indicating a 10 hour prediction window. 
+
 Train and validate the PAVE model, the best model will be saved in PAVE/data/models/
 ```
 cd ../code/
