@@ -2,7 +2,7 @@ import os
 from PAVE.code.tools import parse, py_op
 import pandas as pd
 import numpy as np
-import time
+from datetime import timedelta
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -18,23 +18,20 @@ demo = pd.read_csv(filepath + 'demo.csv')
 label = pd.read_csv(filepath + 'label.csv')
 patient_time_dict = py_op.myreadjson(os.path.join('PAVE/code/', args.result_dir, 'patient_time_dict.json'))
 
-# Time conversion func from gen_vital_feature.py
-def time_to_min(t):
-    t = t.replace('"', '')
-    t = time.mktime(time.strptime(t,'%Y-%m-%d %H:%M:%S'))
-    t = t / 60
-    return int(t)
-
 def prep_data(data, demo, label):
     print("Preparing data...")
-    # Filter events depending on the prediction window
+    # Filter events given a hold-off prediction window
+    # Include only events within last 48 hours, excluding those in hold-off prediction window
     data_inwindow = data.copy()
-    data_inwindow['time'] = data_inwindow.apply(lambda df: time_to_min(df.time)-patient_time_dict[str(df.id)]-1, axis=1)
-    data_inwindow['max_time'] = data_inwindow.groupby('id')['time'].transform('max')
-    data_inwindow = data_inwindow[(data_inwindow['time']<= -args.time_range)] 
-    data_inwindow = data_inwindow[(data_inwindow['time']-data_inwindow['max_time'] <= args.last_time*60)]
-    data_inwindow = data_inwindow.drop(columns=['max_time'])
-
+    data_inwindow['time'] = pd.to_datetime(data_inwindow['time'], format='%Y-%m-%d %H:%M:%S')
+    max_times = data_inwindow.groupby('id').agg(max_time = ('time', 'max')).reset_index() # Get latest timestamp per patient
+    data_inwindow = data_inwindow.merge(max_times, on='id') 
+    data_inwindow['timerange_start'] = data_inwindow['max_time']-timedelta(hours=48) # Get timestamp of 48hr before max time (start of inclusion window)
+    data_inwindow = data_inwindow[data_inwindow['time']>=data_inwindow['timerange_start']] # Include only events within last 48 hours
+    data_inwindow['timerange_end'] = data_inwindow['max_time']-timedelta(hours=-args.last_time) 
+    data_inwindow = data_inwindow[data_inwindow['time']<=data_inwindow['timerange_end']] # Exclude events in prediction window
+    data_inwindow = data_inwindow.drop(columns=['max_time', 'timerange_start', 'timerange_end'])
+    
     # Extract min & max of each variable, merge with patient demo
     minmax_df = data_inwindow.loc[:,data_inwindow.columns!='time'].groupby('id').agg(['min', 'max'])
     minmax_df.columns = ["_".join(col).rstrip('_') for col in minmax_df.columns.to_flat_index()]
@@ -62,8 +59,8 @@ def prep_data(data, demo, label):
     return X_train, X_valid, X_test, y_train, y_valid, y_test
 
 def logistic_regression(X_train, y_train, X_test):
-    grid = {"solver":['lbfgs','newton-cg','liblinear','sag','saga']}
-    model = LogisticRegression(random_state=args.seed, max_iter=1000)
+    grid = {"solver":['lbfgs','newton-cg','liblinear','sag','saga'], "C":np.arange(0.5, 1.0, 0.1)}
+    model = LogisticRegression(random_state=args.seed, max_iter=4000)
     print("Logistic regression - Performing 10-fold CV...")
     cv = GridSearchCV(model, grid, scoring='roc_auc', cv=10).fit(X_train, y_train)
     print("Logistic regression - Best parameters:", cv.best_params_)
@@ -76,7 +73,7 @@ def logistic_regression(X_train, y_train, X_test):
     return Y_pred
 
 def svm(X_train, y_train, X_test):
-    grid = {"kernel":['poly','linear','rbf','sigmoid']}
+    grid = {"kernel":['poly','linear','rbf','sigmoid'], "C":np.arange(0.5, 1.0, 0.1)}
     model = SVC(random_state=args.seed)
     print("SVM - Performing 10-fold CV...")
     cv = GridSearchCV(model, grid, scoring='roc_auc', cv=10).fit(X_train, y_train)
@@ -126,8 +123,8 @@ def display_metrics(classifierName,Y_pred,Y_true):
 def main():
     X_train, X_valid, X_test, y_train, y_valid, y_test = prep_data(data, demo, label)
     display_metrics("Logistic Regression", logistic_regression(X_train, y_train, X_test), y_test)
-    display_metrics("SVM", svm(X_train,y_train,X_test),y_test)
     display_metrics("Random Forest", random_forest(X_train,y_train,X_test),y_test)
+    display_metrics("SVM", svm(X_train,y_train,X_test),y_test)
 
 if __name__ == '__main__':
     main()
