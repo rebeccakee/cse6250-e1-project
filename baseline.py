@@ -122,8 +122,8 @@ def display_metrics(classifierName,Y_pred,Y_true):
 
 def main():
     X_train, X_valid, X_test, y_train, y_valid, y_test = prep_data(data, demo, label)
-    display_metrics("Logistic Regression", logistic_regression(X_train, y_train, X_test), y_test)
     display_metrics("Random Forest", random_forest(X_train,y_train,X_test),y_test)
+    display_metrics("Logistic Regression", logistic_regression(X_train, y_train, X_test), y_test)
     display_metrics("SVM", svm(X_train,y_train,X_test),y_test)
 
 if __name__ == '__main__':
