@@ -1,6 +1,3 @@
-# coding=utf8
-
-
 '''
 main.py
 '''
@@ -40,8 +37,7 @@ else:
     args.gpu = 0
 
 if args.model == 'attention':
-    # args.epochs = max(30, args.epochs)
-    args.epochs = 2
+    args.epochs = args.epochs
 
 args.use_trend = max(args.use_trend, args.use_value)
 args.use_value = max(args.use_trend, args.use_value)
@@ -123,35 +119,21 @@ def main():
         patient_master_dict = py_op.myreadjson(os.path.join(args.result_dir, 'patient_master_dict.json'))
         patient_label_dict = py_op.myreadjson(os.path.join(args.result_dir, 'patient_label_dict.json'))
 
-    
-        if os.path.exists(os.path.join(args.result_dir, 'train.json')):
-            patient_train = list(json.load(open(os.path.join(args.result_dir, 'train.json'))))
-            patient_valid = list(json.load(open(os.path.join(args.result_dir, 'valid.json')))) 
-            patient_test = list(json.load(open(os.path.join(args.result_dir, 'test.json')))) 
-        else:
-            patients = sorted(set(patient_label_dict.keys()) & set(patient_time_record_dict) & set(patient_master_dict))
-            print(len(patient_master_dict), len(patient_label_dict), len(patient_time_record_dict))
-            print('There are {:d} patients.'.format(len(patients)))
-            n_train = int(0.7 * len(patients))
-            n_valid = int(0.2 * len(patients))
-            patient_train = patients[:n_train]
-            patient_valid = patients[n_train:n_train+n_valid]
-            patient_test  = patients[n_train+n_valid:]
+        # if os.path.exists(os.path.join(args.result_dir, 'train.json')):
+        #     patient_train = list(json.load(open(os.path.join(args.result_dir, 'train.json'))))
+        #     patient_valid = list(json.load(open(os.path.join(args.result_dir, 'valid.json')))) 
+        #     patient_test = list(json.load(open(os.path.join(args.result_dir, 'test.json')))) 
+        # else:
+        patients = sorted(set(patient_label_dict.keys()) & set(patient_time_record_dict) & set(patient_master_dict))
+        print(len(patient_master_dict), len(patient_label_dict), len(patient_time_record_dict))
+        print('There are {:d} patients.'.format(len(patients)))
+        n_train = int(0.7 * len(patients))
+        n_valid = int(0.2 * len(patients))
+        patient_train = patients[:n_train]
+        patient_valid = patients[n_train:n_train+n_valid]
+        patient_test  = patients[n_train+n_valid:]
 
         args.master_size = len(patient_master_dict[patients[0]])
-    # elif args.task == 'sepsis':
-    #     patient_time_record_dict = py_op.myreadjson(os.path.join(args.result_dir, 'sepsis_time_record_dict.json'))
-    #     patient_master_dict = py_op.myreadjson(os.path.join(args.result_dir, 'patient_master_dict.json'))
-    #     patient_label_dict = py_op.myreadjson(os.path.join(args.result_dir, 'sepsis_label_dict.json'))
-    #     sepsis_split = py_op.myreadjson(os.path.join(args.result_dir, 'sepsis_split.json'))
-    #     print(sepsis_split.keys())
-    #     sepsis_split = sepsis_split[str(- args.last_time)]
-    
-    #     patient_train = sepsis_split['train']
-    #     patient_valid = sepsis_split['valid']
-    #     print('train: {:d}'.format(len(patient_train)))
-    #     print('valid: {:d}'.format(len(patient_valid)))
-
 
     print ('data loading ...')
     train_dataset  = dataloader.DataSet(
